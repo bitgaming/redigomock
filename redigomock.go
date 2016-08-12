@@ -20,6 +20,7 @@ type queueElement struct {
 // your project
 type Conn struct {
 	sync.Mutex
+	NumCalledDo  int
 	SubResponses []Response      // Queue responses for PubSub
 	ReceiveWait  bool            // When set to true, Receive method will wait for a value in ReceiveNow channel to proceed, this is useful in a PubSub scenario
 	ReceiveNow   chan bool       // Used to lock Receive method to simulate a PubSub scenario
@@ -146,6 +147,7 @@ func (c *Conn) Do(commandName string, args ...interface{}) (reply interface{}, e
 	// that were queued via the Send() method, however a call to Do() on the
 	// mock does not empty the queued commands
 	c.Lock()
+	c.NumCalledDo++
 	for _, cmd := range c.queue {
 		if _, err = c.do(cmd.commandName, cmd.args...); err != nil {
 			return
@@ -177,7 +179,7 @@ func (c *Conn) do(commandName string, args ...interface{}) (reply interface{}, e
 		}
 	}
 
-  c.Lock()
+	c.Lock()
 	c.stats[cmd.hash()]++
 	c.Unlock()
 
@@ -240,7 +242,7 @@ func (c *Conn) Receive() (reply interface{}, err error) {
 		}
 	}
 
-  c.Lock()
+	c.Lock()
 	c.stats[cmd.hash()]++
 	c.Unlock()
 
